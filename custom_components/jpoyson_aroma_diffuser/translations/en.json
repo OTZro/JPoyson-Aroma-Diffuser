@@ -1,0 +1,12 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure JPoyson Device",
+        "data": {
+          "device_id": "Bluetooth Device"
+        }
+      }
+    }
+  }
+}
