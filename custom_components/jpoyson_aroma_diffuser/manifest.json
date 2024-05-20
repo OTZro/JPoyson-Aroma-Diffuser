@@ -5,7 +5,7 @@
   "config_flow": true,
   "documentation": "https://github.com/OTZro/JPoyson-Aroma-Diffuser",
   "requirements": [
-    "bleak==0.15.0"
+    "bleak==0.21.1"
   ],
   "dependencies": [],
   "codeowners": [
