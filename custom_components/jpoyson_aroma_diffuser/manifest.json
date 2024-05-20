@@ -3,7 +3,7 @@
   "name": "JPoyson Aroma Diffuser",
   "version": "1.0",
   "config_flow": true,
-  "documentation": "",
+  "documentation": "https://github.com/OTZro/JPoyson-Aroma-Diffuser",
   "requirements": [
     "bleak==0.15.0"
   ],
