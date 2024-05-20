@@ -11,10 +11,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     device_manager = DeviceManager()
     await device_manager.connect_device(device_id)
 
-    async_add_entities([MyBluetoothDeviceSwitch(device_manager)])
+    async_add_entities([JPoysonAromaDiffuserDeviceSwitch(device_manager)])
 
 
-class MyBluetoothDeviceSwitch(SwitchEntity):
+class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
     def __init__(self, device_manager):
         self._device_manager = device_manager
         self._is_on = False

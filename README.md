@@ -1,4 +1,4 @@
-# My Bluetooth Device Integration
+# JPoyson Aroma Diffuser Integration
 
 A Home Assistant custom component to control a Bluetooth device. This integration allows you to connect to a Bluetooth device, and control it using a switch entity in Home Assistant.
 
@@ -19,7 +19,7 @@ A Home Assistant custom component to control a Bluetooth device. This integratio
 
 1. Go to Home Assistant Configuration.
 2. Click on Integrations.
-3. Click on the "+" button and search for "My Bluetooth Device".
+3. Click on the "+" button and search for "JPoyson Aroma Diffuser".
 4. Select your Bluetooth device from the list.
 
 ## Usage

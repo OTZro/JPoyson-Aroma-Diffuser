@@ -7,12 +7,12 @@ from bleak import BleakScanner
 from .const import DOMAIN, DEVICE_ID
 
 
-class MyBluetoothDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
         if user_input is not None:
-            return self.async_create_entry(title="My Bluetooth Device", data=user_input)
+            return self.async_create_entry(title="JPoyson Aroma Diffuser", data=user_input)
 
         devices = await BleakScanner.discover()
         device_options = {device.address: f"{device.name} ({device.address})" for device in devices}
