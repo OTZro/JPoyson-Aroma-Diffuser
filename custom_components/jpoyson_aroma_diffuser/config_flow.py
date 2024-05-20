@@ -1,41 +1,39 @@
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv
-import voluptuous as vol
-from bleak import BleakScanner
 
 from .const import DOMAIN, DEVICE_ID
+
+# Define the configuration schema
+DATA_SCHEMA = vol.Schema({
+    vol.Required("device_id"): str,
+})
 
 
 class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        if user_input is not None:
-            return self.async_create_entry(title="JPoyson Aroma Diffuser", data=user_input)
+        """Handle the initial step."""
+        errors = {}
 
-        devices = await BleakScanner.discover()
-        device_options = {device.address: f"{device.name} ({device.address})" for device in devices}
+        if user_input is not None:
+            device_id = user_input.get("device_id")
+
+            # Validate the device ID (you can add more validation if needed)
+            if not device_id:
+                errors["base"] = "invalid_device_id"
+            else:
+                await self.async_set_unique_id(device_id)
+                self._abort_if_unique_id_configured()
+
+                return self.async_create_entry(
+                    title=f"JPoyson Aroma Diffuser ({device_id})",
+                    data={DEVICE_ID: device_id}
+                )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(DEVICE_ID): vol.In(device_options),
-            })
-        )
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry):
-        return OptionsFlowHandler(config_entry)
-
-
-class OptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
-
-    async def async_step_init(self, user_input=None):
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema({}),
+            data_schema=DATA_SCHEMA,
+            errors=errors
         )
