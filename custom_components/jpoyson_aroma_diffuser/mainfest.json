@@ -1,0 +1,14 @@
+{
+  "domain": "jpoyson_aroma_diffuser",
+  "name": "JPoyson Aroma Diffuser",
+  "version": "1.0",
+  "config_flow": true,
+  "documentation": "",
+  "requirements": [
+    "bleak==0.15.0"
+  ],
+  "dependencies": [],
+  "codeowners": [
+    "@otzro"
+  ]
+}
