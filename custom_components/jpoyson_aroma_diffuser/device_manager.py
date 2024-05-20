@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-
 from bleak import BleakClient, BleakScanner
 
 NOTIFICATION_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CB8"
@@ -64,7 +63,7 @@ class DeviceManager:
             "workingTime": 15,
             "pauseTime": 175,
         }, 0, 1)
-        await self.send_control_code(self.client, control_code)
+        await self.send_control_code(control_code)
         print("Device turned off")
 
     async def turn_on_device(self):
@@ -77,7 +76,7 @@ class DeviceManager:
             "workingTime": 15,
             "pauseTime": 180,
         }, 1, 1)
-        await self.send_control_code(self.client, control_code)
+        await self.send_control_code(control_code)
         print("Device turned on")
 
     async def connect_device(self, device_id):
@@ -100,28 +99,27 @@ class DeviceManager:
             for characteristic in service.characteristics:
                 print(f"  Characteristic: {characteristic.uuid}")
 
-        await self.enable_notifications(self.client, NOTIFICATION_CHARACTERISTIC_UUID)
+        await self.enable_notifications(NOTIFICATION_CHARACTERISTIC_UUID)
 
-        await self.send_control_code(self.client, self.get_clock_code())
+        await self.send_control_code(self.get_clock_code())
         self.sendDateTimeCount += 1
-        self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly, self.client)
+        self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly)
 
-    async def enable_notifications(self, client, characteristic_uuid):
+    async def enable_notifications(self, characteristic_uuid):
         def notification_handler(sender, data):
             print(f"Notification from {sender}: {data}")
 
-        await client.start_notify(characteristic_uuid, notification_handler)
+        await self.client.start_notify(characteristic_uuid, notification_handler)
         print('Notifications enabled')
 
-    def send_clock_code_repeatedly(self, client):
+    def send_clock_code_repeatedly(self):
         if self.sendDateTimeCount < 5:
-            asyncio.create_task(self.send_control_code(client, self.get_clock_code()))
+            asyncio.create_task(self.send_control_code(self.get_clock_code()))
             self.sendDateTimeCount += 1
-            self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly, client)
+            self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly)
         else:
             self.sendClockInterval = None
 
-    async def send_control_code(self, client, code):
+    async def send_control_code(self, code):
         print(f'Sending control code: {code}')
-        # Assuming you have a specific characteristic UUID to write to
-        await client.write_gatt_char(SERVICE_CHARACTERISTIC_UUID, code, response=True)
+        await self.client.write_gatt_char(SERVICE_CHARACTERISTIC_UUID, code, response=True)
