@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 from bleak import BleakClient, BleakScanner
 
@@ -15,6 +16,7 @@ class DeviceManager:
         self.sendClockInterval = None
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5  # Maximum reconnect attempts
+        self.logger = logging.getLogger(__name__)
 
     def get_control_code(self, timer_mode, power_status, current_time_type):
         control_code = [165, 250, power_status, timer_mode['week'], current_time_type]
@@ -66,7 +68,7 @@ class DeviceManager:
             "pauseTime": 175,
         }, 0, 1)
         await self.send_control_code(control_code)
-        print("Device turned off")
+        self.logger.info("Device turned off")
 
     async def turn_on_device(self):
         control_code = self.get_control_code({
@@ -79,14 +81,14 @@ class DeviceManager:
             "pauseTime": 180,
         }, 1, 1)
         await self.send_control_code(control_code)
-        print("Device turned on")
+        self.logger.info("Device turned on")
 
     async def connect_device(self, device_id):
         self.device_id = device_id
         self.connected = False
 
         async def handle_disconnect(client):
-            print(f"Device {self.device_id} disconnected")
+            self.logger.warning(f"Device {self.device_id} disconnected")
             self.connected = False
             await self.try_reconnect()
 
@@ -96,16 +98,16 @@ class DeviceManager:
     async def try_connect(self, client):
         try:
             await client.connect()
-            print(f"Connected to {self.device_id}")
+            self.logger.info(f"Connected to {self.device_id}")
             self.client = client
             self.connected = True
             self.reconnect_attempts = 0  # Reset reconnect attempts after successful connection
 
             services = await self.client.get_services()
             for service in services:
-                print(f"Service: {service.uuid}")
+                self.logger.debug(f"Service: {service.uuid}")
                 for characteristic in service.characteristics:
-                    print(f"  Characteristic: {characteristic.uuid}")
+                    self.logger.debug(f"  Characteristic: {characteristic.uuid}")
 
             await self.enable_notifications(NOTIFICATION_CHARACTERISTIC_UUID)
 
@@ -113,24 +115,24 @@ class DeviceManager:
             self.sendDateTimeCount += 1
             self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly)
         except Exception as e:
-            print(f"Failed to connect: {e}")
+            self.logger.error(f"Failed to connect: {e}")
             await self.try_reconnect()
 
     async def try_reconnect(self):
         if self.reconnect_attempts < self.max_reconnect_attempts:
             self.reconnect_attempts += 1
-            print(f"Reconnecting attempt {self.reconnect_attempts}/{self.max_reconnect_attempts}...")
+            self.logger.info(f"Reconnecting attempt {self.reconnect_attempts}/{self.max_reconnect_attempts}...")
             await asyncio.sleep(5)  # Wait before trying to reconnect
             await self.connect_device(self.device_id)
         else:
-            print("Max reconnect attempts reached. Giving up.")
+            self.logger.error("Max reconnect attempts reached. Giving up.")
 
     async def enable_notifications(self, characteristic_uuid):
         def notification_handler(sender, data):
-            print(f"Notification from {sender}: {data}")
+            self.logger.info(f"Notification from {sender}: {data}")
 
         await self.client.start_notify(characteristic_uuid, notification_handler)
-        print('Notifications enabled')
+        self.logger.info('Notifications enabled')
 
     def send_clock_code_repeatedly(self):
         if self.sendDateTimeCount < 5:
@@ -141,5 +143,5 @@ class DeviceManager:
             self.sendClockInterval = None
 
     async def send_control_code(self, code):
-        print(f'Sending control code: {code}')
+        self.logger.info(f'Sending control code: {code}')
         await self.client.write_gatt_char(SERVICE_CHARACTERISTIC_UUID, code, response=True)
