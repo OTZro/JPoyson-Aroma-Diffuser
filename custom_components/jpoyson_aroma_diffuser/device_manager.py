@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
+
 from bleak import BleakClient, BleakScanner
 
 NOTIFICATION_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CB8"
@@ -15,7 +16,7 @@ class DeviceManager:
         self.sendDateTimeCount = 0
         self.sendClockInterval = None
         self.reconnect_attempts = 0
-        self.max_reconnect_attempts = 5  # Maximum reconnect attempts
+        self.max_reconnect_attempts = 500  # Maximum reconnect attempts
         self.logger = logging.getLogger(__name__)
 
     def get_control_code(self, timer_mode, power_status, current_time_type):
@@ -87,7 +88,7 @@ class DeviceManager:
         self.device_id = device_id
         self.connected = False
 
-        async def handle_disconnect(client):
+        async def handle_disconnect(client: BleakClient):
             self.logger.warning(f"Device {self.device_id} disconnected")
             self.connected = False
             await self.try_reconnect()
@@ -102,12 +103,6 @@ class DeviceManager:
             self.client = client
             self.connected = True
             self.reconnect_attempts = 0  # Reset reconnect attempts after successful connection
-
-            services = await self.client.get_services()
-            for service in services:
-                self.logger.debug(f"Service: {service.uuid}")
-                for characteristic in service.characteristics:
-                    self.logger.debug(f"  Characteristic: {characteristic.uuid}")
 
             await self.enable_notifications(NOTIFICATION_CHARACTERISTIC_UUID)
 
