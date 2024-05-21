@@ -1,11 +1,14 @@
+import logging
+
 import voluptuous as vol
 from bleak import BleakScanner
 from homeassistant import config_entries
-from homeassistant.core import _LOGGER
 from homeassistant.helpers import selector
 from homeassistant.helpers.selector import SelectOptionDict
 
 from .const import DOMAIN, DEVICE_ID
+
+logger = logging.getLogger(__package__)
 
 
 class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -32,19 +35,19 @@ class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
         # Discover available devices
-        _LOGGER.warning("Calling async_step_user...")
+        logger.warning("Calling async_step_user...")
         devices = await self._async_discover_devices()
-        _LOGGER.warning("Discovered devices: %s", devices)
+        logger.warning("Discovered devices: %s", devices)
 
         if not devices:
-            _LOGGER.warning("No BLE devices found.")
+            logger.warning("No BLE devices found.")
             return self.async_abort(reason="no_devices_found")
 
         # Extract device IDs and names from the list of devices
         device_options: list[SelectOptionDict] = [
             SelectOptionDict(label=device["name"], value=device["address"]) for device in devices
         ]
-        _LOGGER.warning("Device options: %s", device_options)
+        logger.warning("Device options: %s", device_options)
 
         # Show form with device selection dropdown
         return self.async_show_form(
@@ -60,12 +63,12 @@ class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _async_discover_devices(self):
         """Discover BLE devices."""
-        _LOGGER.warning("Discovering BLE devices...")
+        logger.warning("Discovering BLE devices...")
         try:
             # Use BleakScanner to discover BLE devices
             devices = await BleakScanner.discover()
-            _LOGGER.warning("Discovered %d BLE devices", len(devices))
+            logger.warning("Discovered %d BLE devices", len(devices))
             return [{"name": device.name, "address": device.address} for device in devices]
         except Exception as e:
-            _LOGGER.error("Error discovering BLE devices: %s", e)
+            logger.error("Error discovering BLE devices: %s", e)
             return []

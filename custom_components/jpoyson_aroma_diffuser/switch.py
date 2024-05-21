@@ -1,15 +1,17 @@
+import logging
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DEVICE_ID
-from .device_manager import DeviceManager
+from .const import DOMAIN
+
+logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities):
-    device_id = config_entry.data[DEVICE_ID]
-    device_manager = DeviceManager()
-    await device_manager.connect_device(device_id)
+    device_manager = hass.data[DOMAIN].pop(config_entry.entry_id)
+    logger.warning("Adding JPoyson Aroma Diffuser switch...")
 
     async_add_entities([JPoysonAromaDiffuserDeviceSwitch(device_manager)])
 
