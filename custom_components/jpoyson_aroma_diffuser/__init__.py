@@ -31,6 +31,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     await hass.config_entries.async_forward_entry_unload(entry, "switch")
     manager = hass.data[DOMAIN].pop(entry.entry_id)
-    await manager.client.disconnect()
+    if manager.client:
+        await manager.client.disconnect()
 
     return True
