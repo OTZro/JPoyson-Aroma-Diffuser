@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 
 NOTIFICATION_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CB8"
 SERVICE_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CBA"
@@ -12,12 +12,11 @@ class DeviceManager:
     def __init__(self):
         self.client = None
         self.device_id = None
-        self.connected = False
         self.sendDateTimeCount = 0
         self.sendClockInterval = None
         self.reconnect_attempts = 0
-        self.max_reconnect_attempts = 500  # Maximum reconnect attempts
-        self.logger = logging.getLogger(__name__)
+        self.max_reconnect_attempts = 10  # Maximum reconnect attempts
+        self.logger = logging.getLogger(__package__)
 
     def get_control_code(self, timer_mode, power_status, current_time_type):
         control_code = [165, 250, power_status, timer_mode['week'], current_time_type]
@@ -86,22 +85,19 @@ class DeviceManager:
 
     async def connect_device(self, device_id):
         self.device_id = device_id
-        self.connected = False
 
         async def handle_disconnect(client: BleakClient):
             self.logger.warning(f"Device {self.device_id} disconnected")
-            self.connected = False
             await self.try_reconnect()
 
         client = BleakClient(device_id, disconnected_callback=handle_disconnect)
-        await self.try_connect(client)
+        return await self.try_connect(client)
 
     async def try_connect(self, client):
         try:
             await client.connect()
             self.logger.info(f"Connected to {self.device_id}")
             self.client = client
-            self.connected = True
             self.reconnect_attempts = 0  # Reset reconnect attempts after successful connection
 
             await self.enable_notifications(NOTIFICATION_CHARACTERISTIC_UUID)
@@ -109,18 +105,22 @@ class DeviceManager:
             await self.send_control_code(self.get_clock_code())
             self.sendDateTimeCount += 1
             self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly)
+            return True
         except Exception as e:
             self.logger.error(f"Failed to connect: {e}")
-            await self.try_reconnect()
+            return await self.try_reconnect()
 
     async def try_reconnect(self):
         if self.reconnect_attempts < self.max_reconnect_attempts:
             self.reconnect_attempts += 1
             self.logger.info(f"Reconnecting attempt {self.reconnect_attempts}/{self.max_reconnect_attempts}...")
             await asyncio.sleep(5)  # Wait before trying to reconnect
-            await self.connect_device(self.device_id)
+            return await self.connect_device(self.device_id)
         else:
             self.logger.error("Max reconnect attempts reached. Giving up.")
+            self.reconnect_attempts = 0
+
+        return False
 
     async def enable_notifications(self, characteristic_uuid):
         def notification_handler(sender, data):
@@ -128,6 +128,12 @@ class DeviceManager:
 
         await self.client.start_notify(characteristic_uuid, notification_handler)
         self.logger.info('Notifications enabled')
+
+    @property
+    def connected(self):
+        if not self.client:
+            return False
+        return self.client.is_connected
 
     def send_clock_code_repeatedly(self):
         if self.sendDateTimeCount < 5:

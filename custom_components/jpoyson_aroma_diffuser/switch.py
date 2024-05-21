@@ -30,11 +30,26 @@ class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
         return self._is_on
 
     async def async_turn_on(self, **kwargs):
+        if not self._device_manager.connected:
+            logger.warning("Device is not connected.")
+            is_success = await self._device_manager.try_reconnect()
+            logger.warning("is_success: %s", is_success)
+            if not is_success:
+                logger.warning("Failed to reconnect to the device.")
+                return
+
         await self._device_manager.turn_on_device()
         self._is_on = True
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs):
+        if not self._device_manager.connected:
+            logger.warning("Device is not connected.")
+            is_success = await self._device_manager.try_reconnect()
+            if not is_success:
+                logger.warning("Failed to reconnect to the device.")
+                return
+
         await self._device_manager.turn_off_device()
         self._is_on = False
         self.async_write_ha_state()
