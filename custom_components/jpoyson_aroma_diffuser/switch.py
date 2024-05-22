@@ -20,6 +20,7 @@ class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
     def __init__(self, device_manager):
         self._device_manager = device_manager
         self._is_on = False
+        self._device_manager.set_power_status_callback(self._on_power_status_changed)
 
     @property
     def name(self):
@@ -64,4 +65,9 @@ class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
 
         await self._device_manager.turn_off_device()
         self._is_on = False
+        self.async_write_ha_state()
+
+    def _on_power_status_changed(self, is_on):
+        logger.info("Power status changed: %s", is_on)
+        self._is_on = is_on
         self.async_write_ha_state()

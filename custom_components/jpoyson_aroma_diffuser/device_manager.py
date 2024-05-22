@@ -17,6 +17,9 @@ class DeviceManager:
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 10  # Maximum reconnect attempts
         self.logger = logging.getLogger(__package__)
+        self.state_object_array = [None] * 4  # Assuming 4 timer slots as per the JS code
+        self.power_status = False
+        self.power_status_callback = None
 
     def get_control_code(self, timer_mode, power_status, current_time_type):
         control_code = [165, 250, power_status, timer_mode['week'], current_time_type]
@@ -59,7 +62,7 @@ class DeviceManager:
 
     async def turn_off_device(self):
         control_code = self.get_control_code({
-            "week": 255,
+            "week": 255,  # 255 represents all days of the week 11111111
             "startTimeHour": "00",
             "startTimeMin": "00",
             "stopTimeHour": "23",
@@ -72,7 +75,7 @@ class DeviceManager:
 
     async def turn_on_device(self):
         control_code = self.get_control_code({
-            "week": 255,
+            "week": 255,  # 255 represents all days of the week 11111111
             "startTimeHour": "00",
             "startTimeMin": "00",
             "stopTimeHour": "23",
@@ -124,10 +127,49 @@ class DeviceManager:
 
     async def enable_notifications(self, characteristic_uuid):
         def notification_handler(sender, data):
-            self.logger.info(f"Notification from {sender}: {data}")
+            # 將 bytearray 轉換為十六進制字串
+            hex_data = data.hex().upper()
+            self.logger.info(f"Notification from {sender}: {hex_data}")
+
+            if hex_data.startswith("A5FB"):
+                self.set_device_state(hex_data)
+
+            if self.power_status_callback:
+                self.power_status_callback(self.power_status)
+                self.logger.info(f"Callback called with power status: {self.power_status}")
 
         await self.client.start_notify(characteristic_uuid, notification_handler)
         self.logger.info('Notifications enabled')
+
+    def set_device_state(self, hex_data):
+        # 解析資料
+        power_status = int(hex_data[4:6], 16)
+        week = int(hex_data[6:8], 16)
+        timer_slot = int(hex_data[8:10], 16) - 1
+        start_time_hour = int(hex_data[10:12], 16)
+        start_time_min = int(hex_data[12:14], 16)
+        stop_time_hour = int(hex_data[14:16], 16)
+        stop_time_min = int(hex_data[16:18], 16)
+        working_time = int(hex_data[18:22], 16)
+        pause_time = int(hex_data[22:26], 16)
+
+        self.power_status = (power_status != 0)
+
+        timer_object = {
+            # convert to binary, this is a bitmask. 1 = Monday, 2 = Tuesday, 4 = Wednesday, 8 = Thursday, 16 = Friday, 32 = Saturday, 64 = Sunday
+            "week": week,
+            "startTimeHour": start_time_hour,
+            "startTimeMin": start_time_min,
+            "stopTimeHour": stop_time_hour,
+            "stopTimeMin": stop_time_min,
+            "workingTime": working_time,
+            "pauseTime": pause_time,
+        }
+        try:
+            self.state_object_array[timer_slot] = timer_object
+            self.logger.info(f"Timer slot {timer_slot + 1} state updated: {timer_object}")
+        except IndexError:
+            self.logger.error(f"Invalid timer slot {timer_slot}")
 
     @property
     def connected(self):
@@ -146,3 +188,6 @@ class DeviceManager:
     async def send_control_code(self, code):
         self.logger.info(f'Sending control code: {code}')
         await self.client.write_gatt_char(SERVICE_CHARACTERISTIC_UUID, code, response=True)
+
+    def set_power_status_callback(self, callback):
+        self.power_status_callback = callback
