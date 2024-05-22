@@ -11,7 +11,7 @@ logger = logging.getLogger(__package__)
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities):
     device_manager = hass.data[DOMAIN].pop(config_entry.entry_id)
-    logger.warning("Adding JPoyson Aroma Diffuser switch...")
+    logger.info("Adding JPoyson Aroma Diffuser switch...")
 
     async_add_entities([JPoysonAromaDiffuserDeviceSwitch(device_manager)])
 
@@ -26,16 +26,28 @@ class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
         return "JPoyson Aroma Diffuser"
 
     @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._device_manager.device_id)},
+            "name": "JPoyson Aroma Diffuser",
+            "manufacturer": "J Poyson",
+        }
+
+    @property
+    def unique_id(self):
+        return self._device_manager.device_id
+
+    @property
     def is_on(self):
         return self._is_on
 
     async def async_turn_on(self, **kwargs):
         if not self._device_manager.connected:
-            logger.warning("Device is not connected.")
+            logger.info("Device is not connected.")
             is_success = await self._device_manager.try_reconnect()
-            logger.warning("is_success: %s", is_success)
+            logger.info("is_success: %s", is_success)
             if not is_success:
-                logger.warning("Failed to reconnect to the device.")
+                logger.info("Failed to reconnect to the device.")
                 return
 
         await self._device_manager.turn_on_device()
@@ -44,10 +56,10 @@ class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
 
     async def async_turn_off(self, **kwargs):
         if not self._device_manager.connected:
-            logger.warning("Device is not connected.")
+            logger.info("Device is not connected.")
             is_success = await self._device_manager.try_reconnect()
             if not is_success:
-                logger.warning("Failed to reconnect to the device.")
+                logger.info("Failed to reconnect to the device.")
                 return
 
         await self._device_manager.turn_off_device()
