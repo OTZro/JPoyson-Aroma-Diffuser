@@ -10,5 +10,11 @@
   "dependencies": [],
   "codeowners": [
     "@otzro"
+  ],
+  "bluetooth": [
+    {
+      "connectable": true,
+      "local_name": "AJB*"
+    }
   ]
 }
