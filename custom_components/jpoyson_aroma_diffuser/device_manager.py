@@ -64,6 +64,13 @@ class DeviceManager:
 
         return clock_code_bytes
 
+    def get_query_code(self, current_time_type):
+        query_code = [165, 252, current_time_type, 0, 0, 0]
+        checksum = sum(query_code)
+        query_code.append(checksum)
+        query_code_bytes = bytearray(query_code)
+        return query_code_bytes
+
     async def turn_off_device(self):
         control_code = self.get_control_code({
             "week": 255,  # 255 represents all days of the week 11111111
@@ -188,10 +195,16 @@ class DeviceManager:
             self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly)
         else:
             self.sendClockInterval = None
+            asyncio.create_task(self.send_query_codes())
 
     async def send_control_code(self, code):
         self.logger.info(f'Sending control code: {code}')
         await self.client.write_gatt_char(SERVICE_CHARACTERISTIC_UUID, code, response=True)
+
+    async def send_query_codes(self):
+        for i in range(1, 5):
+            await self.send_control_code(self.get_query_code(i))
+            await asyncio.sleep(0.1)
 
     def set_power_status_callback(self, callback):
         self.power_status_callback = callback
