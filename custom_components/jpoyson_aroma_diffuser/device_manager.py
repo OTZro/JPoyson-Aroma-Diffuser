@@ -9,7 +9,7 @@ SERVICE_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CBA"
 
 
 class DeviceManager:
-    def __init__(self):
+    def __init__(self, working_time=15, pause_time=180):
         self.client = None
         self.device_id = None
         self.sendDateTimeCount = 0
@@ -20,6 +20,8 @@ class DeviceManager:
         self.state_object_array = [None] * 4  # Assuming 4 timer slots as per the JS code
         self.power_status = False
         self.power_status_callback = None
+        self.working_time = working_time
+        self.pause_time = pause_time
 
     def get_control_code(self, timer_mode, power_status, current_time_type):
         control_code = [165, 250, power_status, timer_mode['week'], current_time_type]
@@ -67,8 +69,8 @@ class DeviceManager:
             "startTimeMin": "00",
             "stopTimeHour": "23",
             "stopTimeMin": "59",
-            "workingTime": 15,
-            "pauseTime": 175,
+            "workingTime": self.working_time,
+            "pauseTime": self.pause_time,
         }, 0, 1)
         await self.send_control_code(control_code)
         self.logger.info("Device turned off")
@@ -80,8 +82,8 @@ class DeviceManager:
             "startTimeMin": "00",
             "stopTimeHour": "23",
             "stopTimeMin": "59",
-            "workingTime": 15,
-            "pauseTime": 180,
+            "workingTime": self.working_time,
+            "pauseTime": self.pause_time,
         }, 1, 1)
         await self.send_control_code(control_code)
         self.logger.info("Device turned on")

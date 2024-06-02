@@ -2,7 +2,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN
+from .const import DOMAIN, WORKING_TIME, PAUSE_TIME
 from .device_manager import DeviceManager
 
 
@@ -16,7 +16,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     device_id = entry.data["device_id"]
-    manager = DeviceManager()
+    working_time = entry.options.get(WORKING_TIME, 15)
+    pause_time = entry.options.get(PAUSE_TIME, 180)
+    manager = DeviceManager(working_time=working_time, pause_time=pause_time)
+
     await manager.connect_device(device_id)
     hass.data[DOMAIN][entry.entry_id] = manager
 
