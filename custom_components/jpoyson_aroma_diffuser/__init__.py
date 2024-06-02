@@ -16,9 +16,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     device_id = entry.data["device_id"]
-    working_time = entry.options.get(WORKING_TIME, 15)
-    pause_time = entry.options.get(PAUSE_TIME, 180)
-    manager = DeviceManager(hass=hass, working_time=working_time, pause_time=pause_time)
+    manager = DeviceManager(hass=hass, config_entry=entry)
 
     await manager.connect_device(device_id)
     hass.data[DOMAIN][entry.entry_id] = manager

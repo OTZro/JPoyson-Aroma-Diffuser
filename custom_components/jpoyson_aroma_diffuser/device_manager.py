@@ -3,14 +3,19 @@ import logging
 from datetime import datetime
 
 from bleak import BleakClient
+from homeassistant.config_entries import ConfigEntry
+
+from custom_components.jpoyson_aroma_diffuser import WORKING_TIME, PAUSE_TIME
 
 NOTIFICATION_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CB8"
 SERVICE_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CBA"
 
 
 class DeviceManager:
-    def __init__(self, hass, working_time=15, pause_time=180):
+    def __init__(self, hass, config_entry: ConfigEntry):
         self.hass = hass
+        self.config_entry = config_entry
+
         self.client = None
         self.device_id = None
         self.sendDateTimeCount = 0
@@ -21,10 +26,16 @@ class DeviceManager:
         self.state_object_array = [None] * 4  # Assuming 4 timer slots as per the JS code
         self.power_status = False
         self.power_status_callback = None
-        self.working_time = working_time
-        self.pause_time = pause_time
 
-        self.logger.info(f'DeviceManager initialized, working_time: {working_time}, pause_time: {pause_time}')
+        self.logger.info(f'DeviceManager initialized')
+
+    @property
+    def working_time(self):
+        return self.config_entry.options.get(WORKING_TIME, 15)
+
+    @property
+    def pause_time(self):
+        return self.config_entry.options.get(PAUSE_TIME, 180)
 
     def get_control_code(self, timer_mode, power_status, current_time_type):
         control_code = [165, 250, power_status, timer_mode['week'], current_time_type]
@@ -84,7 +95,7 @@ class DeviceManager:
             "pauseTime": self.pause_time,
         }, 0, 1)
         await self.send_control_code(control_code)
-        self.logger.info("Device turned off")
+        self.logger.info(f"Device turned off, working time: {self.working_time}, pause time: {self.pause_time}")
 
     async def turn_on_device(self):
         control_code = self.get_control_code({
@@ -97,7 +108,7 @@ class DeviceManager:
             "pauseTime": self.pause_time,
         }, 1, 1)
         await self.send_control_code(control_code)
-        self.logger.info("Device turned on")
+        self.logger.info(f"Device turned on, working time: {self.working_time}, pause time: {self.pause_time}")
 
     async def connect_device(self, device_id):
         self.device_id = device_id
@@ -167,6 +178,7 @@ class DeviceManager:
         pause_time = int(hex_data[22:26], 16)
 
         self.power_status = (power_status != 0)
+        self.logger.info(f"Latest power status: {self.power_status}")
 
         timer_object = {
             # convert to binary, this is a bitmask. 1 = Monday, 2 = Tuesday, 4 = Wednesday, 8 = Thursday, 16 = Friday, 32 = Saturday, 64 = Sunday

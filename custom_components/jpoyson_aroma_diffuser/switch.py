@@ -19,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 class JPoysonAromaDiffuserDeviceSwitch(SwitchEntity):
     def __init__(self, device_manager):
         self._device_manager = device_manager
-        self._is_on = False
+        self._is_on = self._device_manager.power_status
         self._device_manager.set_power_status_callback(self._on_power_status_changed)
 
     @property
