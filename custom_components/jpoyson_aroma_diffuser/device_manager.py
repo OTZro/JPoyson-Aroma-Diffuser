@@ -9,7 +9,8 @@ SERVICE_CHARACTERISTIC_UUID = "0783B03E-8535-B5A0-7140-A304D2495CBA"
 
 
 class DeviceManager:
-    def __init__(self, working_time=15, pause_time=180):
+    def __init__(self, hass, working_time=15, pause_time=180):
+        self.hass = hass
         self.client = None
         self.device_id = None
         self.sendDateTimeCount = 0
@@ -64,10 +65,11 @@ class DeviceManager:
 
         return clock_code_bytes
 
-    def get_query_code(self, current_time_type):
-        query_code = [165, 252, current_time_type, 0, 0, 0]
+    def get_query_code(self, time_slot):
+        query_code = [165, 252, time_slot, 0, 0, 0]
         checksum = sum(query_code)
-        query_code.append(checksum)
+        query_code.append(checksum & 255)
+
         query_code_bytes = bytearray(query_code)
         return query_code_bytes
 
@@ -179,6 +181,8 @@ class DeviceManager:
         try:
             self.state_object_array[timer_slot] = timer_object
             self.logger.info(f"Timer slot {timer_slot + 1} state updated: {timer_object}")
+            # Notify Home Assistant
+            self.hass.states.async_set(f"sensor.timer_slot_{timer_slot + 1}", timer_object)
         except IndexError:
             self.logger.error(f"Invalid timer slot {timer_slot}")
 

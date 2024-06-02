@@ -1,7 +1,7 @@
 {
   "name": "JPoyson Aroma Diffuser",
   "content_in_root": false,
-  "domains": ["switch"],
+  "domains": ["switch", "sensor"],
   "country": "us",
   "homeassistant": "2021.6.0",
   "iot_class": "local_polling",

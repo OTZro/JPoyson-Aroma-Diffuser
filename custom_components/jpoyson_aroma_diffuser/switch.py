@@ -10,7 +10,7 @@ logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities):
-    device_manager = hass.data[DOMAIN].pop(config_entry.entry_id)
+    device_manager = hass.data[DOMAIN].get(config_entry.entry_id)
     logger.info("Adding JPoyson Aroma Diffuser switch...")
 
     async_add_entities([JPoysonAromaDiffuserDeviceSwitch(device_manager)])
