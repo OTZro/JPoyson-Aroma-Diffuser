@@ -31,10 +31,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
+    """Unload a JPoyson Aroma Diffuser config entry."""
+    # Unload the switch platform
     await hass.config_entries.async_forward_entry_unload(entry, "switch")
-    manager = hass.data[DOMAIN].pop(entry.entry_id)
-    if manager.client:
+
+    # Remove the manager from hass.data and handle disconnection
+    manager = hass.data[DOMAIN].pop(entry.entry_id, None)
+    if manager and manager.client:
         await manager.client.disconnect()
 
     return True
