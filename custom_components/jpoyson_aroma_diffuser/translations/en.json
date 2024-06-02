@@ -4,7 +4,20 @@
       "user": {
         "title": "Configure JPoyson Device",
         "data": {
-          "device_id": "Bluetooth Device"
+          "device_id": "Bluetooth Device",
+          "working_time": "Working Time",
+          "pause_time": "Pause Time"
+        }
+      }
+    },
+    "options": {
+      "step": {
+        "init": {
+          "title": "Configure JPoyson Device Options",
+          "data": {
+            "working_time": "Working Time",
+            "pause_time": "Pause Time"
+          }
         }
       }
     }

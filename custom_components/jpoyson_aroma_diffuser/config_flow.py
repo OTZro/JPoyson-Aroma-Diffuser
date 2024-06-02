@@ -11,6 +11,7 @@ from .const import DOMAIN, DEVICE_ID, WORKING_TIME, PAUSE_TIME
 
 logger = logging.getLogger(__package__)
 
+
 class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 

@@ -23,6 +23,8 @@ class DeviceManager:
         self.working_time = working_time
         self.pause_time = pause_time
 
+        self.logger.info(f'DeviceManager initialized, working_time: {working_time}, pause_time: {pause_time}')
+
     def get_control_code(self, timer_mode, power_status, current_time_type):
         control_code = [165, 250, power_status, timer_mode['week'], current_time_type]
         start_hour = int(timer_mode['startTimeHour'])
