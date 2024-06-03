@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from bleak import BleakClient
+from bleak import BleakClient, BleakScanner
 from homeassistant.config_entries import ConfigEntry
 
 from custom_components.jpoyson_aroma_diffuser import WORKING_TIME, PAUSE_TIME
@@ -117,6 +117,7 @@ class DeviceManager:
             self.logger.warning(f"Device {self.device_id} disconnected")
             await self.try_reconnect()
 
+        await BleakScanner.discover()  # Discover devices before connecting.
         client = BleakClient(device_id, disconnected_callback=handle_disconnect)
         return await self.try_connect(client)
 
