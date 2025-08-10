@@ -2,7 +2,9 @@ import asyncio
 import logging
 from datetime import datetime
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
+from bleak_retry_connector import establish_connection
+from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 
 from custom_components.jpoyson_aroma_diffuser import WORKING_TIME, PAUSE_TIME
@@ -111,19 +113,42 @@ class DeviceManager:
         self.logger.info(f"Device turned on, working time: {self.working_time}, pause time: {self.pause_time}")
 
     async def connect_device(self, device_id):
+        """Connect to the BLE device using Home Assistant's bluetooth integration."""
         self.device_id = device_id
-
+        
         async def handle_disconnect(client: BleakClient):
             self.logger.warning(f"Device {self.device_id} disconnected")
+            self.client = None  # Clear the client reference
             await self.try_reconnect()
 
-        await BleakScanner.discover()  # Discover devices before connecting.
-        client = BleakClient(device_id, disconnected_callback=handle_disconnect)
-        return await self.try_connect(client)
+        try:
+            # Use Home Assistant's bluetooth integration for device connection
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, device_id.upper(), connectable=True
+            )
+            if not ble_device:
+                self.logger.error(f"Could not find BLE device {device_id}")
+                return False
+
+            # Use bleak-retry-connector for more reliable connections
+            client = await establish_connection(
+                BleakClient,
+                ble_device,
+                name=device_id,
+                disconnected_callback=handle_disconnect,
+                timeout=10.0,  # 10 second timeout as recommended
+                max_attempts=3
+            )
+            
+            return await self.try_connect(client)
+        except Exception as e:
+            self.logger.error(f"Failed to establish connection: {e}")
+            return False
 
     async def try_connect(self, client):
+        """Initialize connection and setup device communication."""
         try:
-            await client.connect()
+            # Client is already connected by bleak-retry-connector
             self.logger.info(f"Connected to {self.device_id}")
             self.client = client
             self.reconnect_attempts = 0  # Reset reconnect attempts after successful connection
@@ -135,14 +160,19 @@ class DeviceManager:
             self.sendClockInterval = asyncio.get_event_loop().call_later(0.1, self.send_clock_code_repeatedly)
             return True
         except Exception as e:
-            self.logger.error(f"Failed to connect: {e}")
+            self.logger.error(f"Failed to initialize connection: {e}")
+            if client and client.is_connected:
+                await client.disconnect()
             return await self.try_reconnect()
 
     async def try_reconnect(self):
+        """Attempt to reconnect with exponential backoff."""
         if self.reconnect_attempts < self.max_reconnect_attempts:
             self.reconnect_attempts += 1
-            self.logger.info(f"Reconnecting attempt {self.reconnect_attempts}/{self.max_reconnect_attempts}...")
-            await asyncio.sleep(5)  # Wait before trying to reconnect
+            # Exponential backoff: 2, 4, 8, 16, 32... seconds (max 60)
+            delay = min(2 ** self.reconnect_attempts, 60)
+            self.logger.info(f"Reconnecting attempt {self.reconnect_attempts}/{self.max_reconnect_attempts} in {delay}s...")
+            await asyncio.sleep(delay)
             return await self.connect_device(self.device_id)
         else:
             self.logger.error("Max reconnect attempts reached. Giving up.")

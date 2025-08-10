@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "ajble100"
+version = "0.1.0"
+description = ""
+authors = ["Keven <a2584310@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12.2"
+bleak = "^0.22.1"
+bleak-retry-connector = "^3.5.0"
+homeassistant = "^2024.5.4"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-asyncio = "^0.26.0"
+pyserial = "^3.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

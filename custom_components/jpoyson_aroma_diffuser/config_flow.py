@@ -1,8 +1,8 @@
 import logging
 
 import voluptuous as vol
-from bleak import BleakScanner
 from homeassistant import config_entries
+from homeassistant.components import bluetooth
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 from homeassistant.helpers.selector import SelectOptionDict
@@ -69,13 +69,24 @@ class JPoysonAromaDiffuserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def _async_discover_devices(self):
-        """Discover BLE devices."""
+        """Discover BLE devices using Home Assistant's bluetooth integration."""
         logger.debug("Discovering BLE devices...")
         try:
-            # Use BleakScanner to discover BLE devices
-            devices = await BleakScanner.discover()
-            logger.debug("Discovered %d BLE devices", len(devices))
-            return [{"name": device.name, "address": device.address} for device in devices]
+            # Use Home Assistant's bluetooth scanner for better reliability
+            scanner = bluetooth.async_get_scanner(self.hass)
+            discovered_devices = await scanner.discover(timeout=10.0)
+            logger.debug("Discovered %d BLE devices", len(discovered_devices))
+            
+            # Filter and format devices
+            devices = []
+            for device in discovered_devices:
+                if device.name:  # Only include devices with names
+                    devices.append({
+                        "name": device.name,
+                        "address": device.address
+                    })
+            
+            return devices
         except Exception as e:
             logger.error("Error discovering BLE devices: %s", e)
             return []

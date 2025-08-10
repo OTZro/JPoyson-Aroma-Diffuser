@@ -5,9 +5,10 @@
   "config_flow": true,
   "documentation": "https://github.com/OTZro/JPoyson-Aroma-Diffuser",
   "requirements": [
-    "bleak>=0.21.1"
+    "bleak>=0.21.1",
+    "bleak-retry-connector>=3.5.0"
   ],
-  "dependencies": [],
+  "dependencies": ["bluetooth"],
   "codeowners": [
     "@otzro"
   ]
