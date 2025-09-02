@@ -21,24 +21,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await manager.connect_device(device_id)
     hass.data[DOMAIN][entry.entry_id] = manager
 
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "switch")
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, ["switch", "sensor"])
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a JPoyson Aroma Diffuser config entry."""
-    await hass.config_entries.async_forward_entry_unload(entry, "switch")
-    await hass.config_entries.async_forward_entry_unload(entry, "sensor")
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["switch", "sensor"])
 
     # Remove the manager from hass.data and handle disconnection
     manager = hass.data[DOMAIN].pop(entry.entry_id, None)
     if manager and manager.client:
         await manager.client.disconnect()
 
-    return True
+    return unload_ok
